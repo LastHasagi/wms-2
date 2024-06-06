@@ -1,25 +1,33 @@
 const express = require('express');
-const venom = require('venom-bot')
+const venom = require('venom-bot');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const multer = require('multer');
-const app = express();  
+const axios = require('axios');
+const XLSX = require('xlsx');
+const fs = require('fs');
+const path = require('path');
+const base64ToImage = require('base64-to-image');
+const image = ('./upload/folheto.jpg');
 
-const uploads = multer({ dest: './uploads/' }); // define a pasta onde os arquivos serão salvos
-
-
+const app = express();
 app.use(express.json()); 
 const port = 3000;
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, './upload')
+        cb(null, './upload')
     },
     filename: function (req, file, cb) {
-      cb(null, 'folheto.jpg')
+        if (file.fieldname === "image") { // if uploading an image
+            cb(null, 'folheto.jpg');
+        } else {
+            cb(null, file.originalname);
+        }
     }
-  });
-  const upload = multer({ storage: storage });
+});
+
+const upload = multer({ storage: storage });
 
 const options = {
     definition: {
@@ -31,7 +39,7 @@ const options = {
       },
     },
     apis: ['./app.js'], 
-  };
+};
   
 const specs = swaggerJsdoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
@@ -39,6 +47,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 venom
     .create({
         session: 'apizap',
+        qrCallback: qrCode => {
+            // Convert the base64 string to an image
+            let path = './images/';
+            let optionalObj = {'fileName': 'qrCode', 'type':'jpg'};
+            base64ToImage.base64ToImage(qrCode, path, optionalObj);
+        },
     })
     .then((client) => start(client))
     .catch((erro) => {
@@ -73,30 +87,83 @@ venom
          *       400:
          *         description: Houve um erro ao enviar a mensagem
          */
-        app.post("/send-message", upload.single('image'), async (req, res) => { 
-            const { to, message } = req.body;
-            const image = './upload/folheto.jpg';
+        app.use(express.json());
+        app.use(express.urlencoded({ extended: true }));
 
-            // Verifique se 'to' é uma array
-            if (!Array.isArray(to)) {
-                return res.status(400).json({ error: "'to' deve ser uma array de números." });
-            }
+        app.get('/', (req, res) => {
+          res.send(`
+              <div>
+                  <h1>Scan this QR Code:</h1>
+                  <img src="./images/qrCode.jpg" alt="QR Code">
+                  <p>Assim que scanear o QRCode, clique no botão:</p>
+                  <a href="/disparador"><button>Avançar</button></a>
+              </div>
+          `);
+      });
+        app.use('/images', express.static('images'));
 
-            // Envie a mensagem para cada número
-            for (let i = 0; i < to.length; i++) {
-                await client.sendImage(to[i] + '@c.us', image, 'folheto', message);
-            }
-
-            res.json("mensagens enviadas");
+        app.get('/disparador', (req, res) => {
+            res.sendFile(path.join(__dirname + '/index.html'));
         });
 
-        app.post('/upload', uploads.single('image'), (req, res) => {
-            // req.file contém informações sobre o arquivo enviado
-            // req.body contém quaisquer campos de texto enviados junto com o arquivo
+        const upload = multer({ storage: storage });
+
+        app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
+
+        app.post('/upload', upload.fields([{ name: 'contatos' }, { name: 'image' }]), async (req, res) => {
+            console.log(req.files);
+
+            // Read the Excel file
+            const workbook = XLSX.readFile(req.files['contatos'][0].path);
+            const sheet_name_list = workbook.SheetNames;
+            const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]], {header:1});
+
+            // Get the 'to' values from the Excel file
+            const to = json.slice(1).map(row => row[0]); // get the first column of each row, excluding the header
+
+            // Get the message from the request body
+            const message = req.body.message;
+
+            // Create the data object
+            const data = {
+                "to": to,
+                "message": message,
+            };
+
+            console.log(data);
+      
+            // Send the JSON object to the API
+            await sendMessage(data, res);
+
+            // Redirect the user to the home page
+            res.redirect('/disparador')       
+        });
+
+        app.post('/send-message', sendMessage);
         
-            // Você pode enviar uma resposta para confirmar que o upload foi bem-sucedido
-            res.send('Upload bem-sucedido!');
-        });
+        async function sendMessage(req, res) {
+            // If req is an object with a 'body' property, get 'to' and 'message' from there
+            // Otherwise, assume that req is the data object
+            const { to, message } = req.body || req;
+        
+            // Check if 'to' and 'message' are defined
+            if (!to || !message) {
+                return res.status(400).send('Invalid request body. "to" and "message" are required.');
+            }
+        
+            // Send the message to each number in the 'to' array
+            for (let number of to) {
+                try {
+                    await client.sendImage(number + '@c.us', image, 'folheto', message);
+                } catch (error) {
+                    console.error(`Failed to send message to ${number}:`, error);
+                    return res.status(500).send(`Failed to send message to ${number}.`);
+                }
+            }
+        
+            // Send a success response
+            res.status(200).send('Messages sent successfully.');
+        }
         
     }
 
