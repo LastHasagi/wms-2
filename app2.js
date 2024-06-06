@@ -11,7 +11,6 @@ const image = ('./upload/folheto.jpg');
 
 const app = express();
 app.use(express.json()); 
-const port = 3000;
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -154,7 +153,3 @@ venom
   .catch((erro) => {
     console.log(erro);
   });
-
-app.listen(port, () => {
-    console.log(`API rodando na porta ${port}`);
-});
