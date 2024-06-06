@@ -155,6 +155,7 @@ app.get('/', (req, res) => {
         });
 });
 
-app.listen(port, () => {
-    console.log(`API rodando na porta ${port}`);
+// Start the server
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server is running on http://0.0.0.0:${port}`);
 });
