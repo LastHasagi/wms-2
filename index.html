@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>WMS - V1.0 (Beta)</title>
+        <link rel="stylesheet" type="text/css" href="style.css">
+    </head>
+<body>
+    <h1>Envie suas mensagens automaticamente</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <label for="contatos">Arquivo de contatos:</label>
+        <input type="file" id="contatos" name="contatos" accept=".xlsx,.xls"><br>
+        <label for="message">Mensagem a ser enviada:</label>
+        <input type="text" id="message" name="message"><br>
+        <label for="image">Imagem a ser enviada:</label>
+        <input type="file" id="image" name="image" accept="image/*"><br>
+        <input type="submit" value="Enviar">
+    </form>
+</body>
+</html>
