@@ -3,8 +3,11 @@ const venom = require('venom-bot')
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const multer = require('multer');
-
 const app = express();  
+
+const uploads = multer({ dest: './uploads/' }); // define a pasta onde os arquivos serão salvos
+
+
 app.use(express.json()); 
 const port = 3000;
 
@@ -85,6 +88,14 @@ venom
             }
 
             res.json("mensagens enviadas");
+        });
+
+        app.post('/upload', uploads.single('image'), (req, res) => {
+            // req.file contém informações sobre o arquivo enviado
+            // req.body contém quaisquer campos de texto enviados junto com o arquivo
+        
+            // Você pode enviar uma resposta para confirmar que o upload foi bem-sucedido
+            res.send('Upload bem-sucedido!');
         });
         
     }
