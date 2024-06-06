@@ -12,6 +12,8 @@ const image = ('./upload/folheto.jpg');
 const app = express();
 app.use(express.json()); 
 
+const port = process.env.PORT || 3000;
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, './upload')
@@ -45,17 +47,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/images', express.static('images'));
-
-app.get('/', (req, res) => {
-    res.send(`
-        <div>
-            <h1>Scan this QR Code:</h1>
-            <img src="/images/out.png" alt="QR Code">
-            <p>Assim que scanear o QRCode, clique no botão:</p>
-            <a href="/disparador"><button>Avançar</button></a>
-        </div>
-    `);
-  });
 
 app.get('/disparador', (req, res) => {
     res.sendFile(path.join(__dirname + '/index.html'));
@@ -118,38 +109,52 @@ async function sendMessage(req, res) {
     res.status(200).send('Messages sent successfully.');
 }
 
-venom
-  .create(
-    'sessionName',
-    (base64Qr, asciiQR, attempts, urlCode) => {
-      console.log(asciiQR); // Optional to log the QR in the terminal
-      var matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
-        response = {};
+app.get('/', (req, res) => {
+    // Send the HTML response immediately
+    res.send(`
+        <div>
+            <h1>Scan this QR Code:</h1>
+            <img src="/images/out.png" alt="QR Code">
+            <p>Assim que scanear o QRCode, clique no botão:</p>
+            <a href="/disparador"><button>Avançar</button></a>
+        </div>
+    `);
 
-      if (matches.length !== 3) {
-        return new Error('Invalid input string');
-      }
-      response.type = matches[1];
-      response.data = new Buffer.from(matches[2], 'base64');
+    // Then start Venom
+    venom
+        .create(
+            'sessionName',
+            (base64Qr, asciiQR, attempts, urlCode) => {
+                console.log(asciiQR); // Optional to log the QR in the terminal
+                var matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
+                    response = {};
 
-      var imageBuffer = response;
-      require('fs').writeFile(
-        './images/out.png',
-        imageBuffer['data'],
-        'binary',
-        function (err) {
-          if (err != null) {
-            console.log(err);
-          }
-        }
-      );
-    },
-    undefined,
-    { logQR: false }
-  )
-  .then((client) => {
-    start(client);
-  })
-  .catch((erro) => {
-    console.log(erro);
-  });
+                if (matches.length !== 3) {
+                    return new Error('Invalid input string');
+                }
+                response.type = matches[1];
+                response.data = new Buffer.from(matches[2], 'base64');
+
+                var imageBuffer = response;
+                fs.writeFile(
+                    './images/out.png',
+                    imageBuffer['data'],
+                    'binary',
+                    function (err) {
+                        if (err != null) {
+                            console.log(err);
+                        }
+                    }
+                );
+            },
+            undefined,
+            { logQR: false }
+        )
+        .catch((erro) => {
+            console.log(erro);
+        });
+});
+
+app.listen(port, () => {
+    console.log(`API rodando na porta ${port}`);
+});
