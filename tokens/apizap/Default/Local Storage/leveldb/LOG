@@ -1,6 +1,3 @@
-2024/06/06-11:14:51.568 53e8 Reusing MANIFEST C:\Users\Digu\Desktop\wms-2\tokens\apizap\Default\Local Storage\leveldb/MANIFEST-000001
-2024/06/06-11:14:51.570 53e8 Recovering log #13
-2024/06/06-11:14:51.571 53e8 Reusing old log C:\Users\Digu\Desktop\wms-2\tokens\apizap\Default\Local Storage\leveldb/000013.log 
-2024/06/06-11:15:51.934 1cb0 Level-0 table #17: started
-2024/06/06-11:15:51.945 1cb0 Level-0 table #17: 13113 bytes OK
-2024/06/06-11:15:51.946 1cb0 Delete type=0 #13
+2024/06/06-13:15:55.240 3fa8 Reusing MANIFEST C:\Users\Digu\Desktop\wms-2\tokens\apizap\Default\Local Storage\leveldb/MANIFEST-000001
+2024/06/06-13:15:55.248 3fa8 Recovering log #16
+2024/06/06-13:15:55.249 3fa8 Reusing old log C:\Users\Digu\Desktop\wms-2\tokens\apizap\Default\Local Storage\leveldb/000016.log 
